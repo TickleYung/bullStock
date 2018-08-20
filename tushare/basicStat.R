@@ -1,4 +1,5 @@
 setwd("/Users/surgery/Project/HOME/github/bullStock/tushare")
+setwd("D:\\2.Code\\github\\bullStock\\tushare")
 options(stringsAsFactors = F)
 all_basics <- read.csv("stock_basics.csv", header = T, colClasses = "character")
 rownames(all_basics) <- all_basics$code
@@ -52,6 +53,8 @@ filterCode$totalvalue <- filterCode$totals * filterCode$tmpclose
 filterCode$subvalue <- filterCode$outstanding * filterCode$tmpclose
 
 write.csv(filterCode, file="filterCode.csv")
+
+filterCode <- read.csv("filterCode.csv", header = T, colClasses = "character")
 
 # 60XXXX是上海证券A股票 00XXXX深圳中小板股票 30XXXX是创业板股票
 
