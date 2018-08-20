@@ -1,15 +1,57 @@
 setwd("/Users/surgery/Project/HOME/github/bullStock/tushare")
-all_basics <- read.csv("all_basics.csv", header = T)
+options(stringsAsFactors = F)
+all_basics <- read.csv("stock_basics.csv", header = T, colClasses = "character")
+rownames(all_basics) <- all_basics$code
 
 # total shares
 dim(all_basics)
 # [1] 3538   22
 
 # issue time 
+all_basics[,"timeToMarket"] <- as.numeric(all_basics[,"timeToMarket"])
 issueYear <- as.integer(all_basics[,"timeToMarket"]/10000)
 # exception
 # all_basics[issueYear==0,]
 barplot(table(issueYear)[names(table(issueYear))!=0])
+# filter out company less than two years
+filterCode <- all_basics[all_basics[,"timeToMarket"] > 0 & all_basics[,"timeToMarket"] < 20160820,]
+write.csv(filterCode, file="filterCode.csv")
+
+filterCode$tmpclose <- -1
+filterCode$max2year <- -1
+filterCode$max1year <- -1
+filterCode$max6month <- -1
+filterCode$min2year <- -1
+filterCode$min1year <- -1
+filterCode$min6month <- -1
+
+for (i in filterCode$code) {
+	print(i)
+	#tmpdf <- read.csv(paste("price/",i,".csv",sep=""))
+	tmpdf <- try(read.csv(paste("price/",i,".csv",sep="")), silent=TRUE)
+	if (class(tmpdf) == "try-error") {next}
+	if (dim(tmpdf)[1] < 200) {next}
+	tmpdf$date2 <- as.integer(gsub("-", "", tmpdf$date))
+	filterCode[i,]$tmpclose <- tail(tmpdf, n = 1)$close
+	filterCode[i,]$max2year <- max(tmpdf[tmpdf$date2>20160820,]$close)
+	filterCode[i,]$max1year <- max(tmpdf[tmpdf$date2>20170820,]$close)
+	filterCode[i,]$max6month <- max(tmpdf[tmpdf$date2>20180220,]$close)
+	filterCode[i,]$min2year <- min(tmpdf[tmpdf$date2>20160820,]$close)
+	filterCode[i,]$min1year <- min(tmpdf[tmpdf$date2>20170820,]$close)
+	filterCode[i,]$min6month <- min(tmpdf[tmpdf$date2>20180220,]$close)
+}
+
+filterCode <- filterCode[filterCode$tmpclose != -1 & filterCode$max2year != -1 & filterCode$max1year != -1 & filterCode$max6month != -1 & filterCode$min2year != -1 &filterCode$min1year != -1 &filterCode$min6month != -1,]
+filterCode$pos2year <- (filterCode$tmpclose - filterCode$min2year)/(filterCode$max2year - filterCode$min2year)
+filterCode$pos1year <- (filterCode$tmpclose - filterCode$min1year)/(filterCode$max1year - filterCode$min1year)
+filterCode$pos6month <- (filterCode$tmpclose - filterCode$min6month)/(filterCode$max6month - filterCode$min6month)
+
+filterCode$totals <- as.numeric(filterCode$totals)
+filterCode$outstanding <- as.numeric(filterCode$outstanding)
+filterCode$totalvalue <- filterCode$totals * filterCode$tmpclose
+filterCode$subvalue <- filterCode$outstanding * filterCode$tmpclose
+
+write.csv(filterCode, file="filterCode.csv")
 
 # 60XXXX是上海证券A股票 00XXXX深圳中小板股票 30XXXX是创业板股票
 
