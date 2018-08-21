@@ -15,6 +15,7 @@ issueYear <- as.integer(all_basics[,"timeToMarket"]/10000)
 # all_basics[issueYear==0,]
 barplot(table(issueYear)[names(table(issueYear))!=0])
 # filter out company less than two years
+
 filterCode <- all_basics[all_basics[,"timeToMarket"] > 0 & all_basics[,"timeToMarket"] < 20160820,]
 write.csv(filterCode, file="filterCode.csv")
 
@@ -42,10 +43,17 @@ for (i in filterCode$code) {
 	filterCode[i,]$min6month <- min(tmpdf[tmpdf$date2>20180220,]$close)
 }
 
+save(filterCode, file="filterCode.Rdata")
+
 filterCode <- filterCode[filterCode$tmpclose != -1 & filterCode$max2year != -1 & filterCode$max1year != -1 & filterCode$max6month != -1 & filterCode$min2year != -1 &filterCode$min1year != -1 &filterCode$min6month != -1,]
+
 filterCode$pos2year <- (filterCode$tmpclose - filterCode$min2year)/(filterCode$max2year - filterCode$min2year)
 filterCode$pos1year <- (filterCode$tmpclose - filterCode$min1year)/(filterCode$max1year - filterCode$min1year)
 filterCode$pos6month <- (filterCode$tmpclose - filterCode$min6month)/(filterCode$max6month - filterCode$min6month)
+
+filterCode$de2year <- (filterCode$max2year - filterCode$tmpclose)/filterCode$max2year
+filterCode$de1year <- (filterCode$max1year - filterCode$tmpclose)/filterCode$max1year
+filterCode$de6month <- (filterCode$max6month - filterCode$tmpclose)/filterCode$max6month 
 
 filterCode$totals <- as.numeric(filterCode$totals)
 filterCode$outstanding <- as.numeric(filterCode$outstanding)
@@ -53,8 +61,59 @@ filterCode$totalvalue <- filterCode$totals * filterCode$tmpclose
 filterCode$subvalue <- filterCode$outstanding * filterCode$tmpclose
 
 write.csv(filterCode, file="filterCode.csv")
+save(filterCode, file="filterCode.Rdata")
 
+# filter ST stock
+STstock <- filterCode[grep("ST", filterCode$name),]
+filterCode <- filterCode[!filterCode$code %in% STstock$code,]
+# filter total less than 100
+filterCode <- filterCode[filterCode$subvalue>=100,]
+
+# add stock ZY
+ZY <- read.csv("gpzyhgmx_20180812_20180818.txt", header = T, colClasses = "character", sep="\t")
+rownames(ZY) <- ZY$code
+filterCode$ZYratio <- 0
+common <- filterCode$code[filterCode$code %in% ZY$code]
+filterCode[common,]$ZYratio <- ZY[common,]$Zyratio
+#
+save(filterCode, file="filterCode2.Rdata")
+
+filterCode3 <- filterCode[,c(1,2,3,4,5,13:16,20:22,24,31:39)]
+# sort column
+filterCode3 <- filterCode3[,c("name","industry","tmpclose","de1year","pos1year","pe","profit","totalvalue" ,"subvalue","ZYratio", "pos2year","pos6month","de2year","de6month", "esp","bvps","pb","npr","gpr","code","timeToMarket","area")]
+filterCode3$tmpclose <- round(filterCode3$tmpclose,digits = 1)
+filterCode3$de1year <- round(filterCode3$de1year,digits = 2)
+filterCode3$pos1year <- round(filterCode3$pos1year,digits = 2)
+filterCode3$pe <- round(as.numeric(filterCode3$pe),digits = 0)
+filterCode3$profit <- round(as.numeric(filterCode3$profit),digits = 0)
+filterCode3$totalvalue <- round(as.numeric(filterCode3$totalvalue),digits = 0)
+filterCode3$subvalue <- round(as.numeric(filterCode3$subvalue),digits = 0)
+filterCode3$ZYratio <- round(as.numeric(filterCode3$ZYratio),digits = 1)
+filterCode3$pos2year <- round(filterCode3$pos2year,digits = 2)
+filterCode3$pos6month <- round(filterCode3$pos6month,digits = 2)
+filterCode3$de2year <- round(filterCode3$de2year,digits = 2)
+filterCode3$de6month <- round(filterCode3$de6month,digits = 2)
+filterCode3$esp <- round(as.numeric(filterCode3$esp),digits = 1)
+filterCode3$bvps <- round(as.numeric(filterCode3$bvps),digits = 1)
+filterCode3$pb <- round(as.numeric(filterCode3$pb),digits = 1)
+filterCode3$npr <- round(as.numeric(filterCode3$npr),digits = 1)
+filterCode3$gpr <- round(as.numeric(filterCode3$gpr),digits = 1)
+
+save(filterCode3, file="filterCode3.Rdata")
+
+# filter ZYratio > 30
+filterCode4 <- filterCode3[filterCode3$ZYratio < 30,]
+# filter pos < 0.5, de > 0.4
+filterCode4 <- filterCode4[filterCode4$de1year>0.4 & filterCode4$pos1year<0.5,]
+# filter profit < 0
+filterCode4 <- filterCode4[filterCode4$profit>0,]
+
+save(filterCode4, file="filterCode4.Rdata")
+
+################################################################################
 filterCode <- read.csv("filterCode.csv", header = T, colClasses = "character")
+
+today <- 20180821
 
 # 60XXXX是上海证券A股票 00XXXX深圳中小板股票 30XXXX是创业板股票
 
