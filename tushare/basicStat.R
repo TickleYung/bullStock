@@ -43,6 +43,31 @@ for (i in filterCode$code) {
 	filterCode[i,]$min6month <- min(tmpdf[tmpdf$date2>20180220,]$close)
 }
 
+# add volumn
+filterCode$turnover <- NA
+for (i in filterCode$code) {
+	print(i)
+	#tmpdf <- read.csv(paste("price/",i,".csv",sep=""))
+	tmpdf <- try(read.csv(paste("price/",i,".csv",sep="")), silent=TRUE)
+	# tmpdf$money <- tmpdf$close * tmpdf$volume
+	# tmpdf$money <- tmpdf$volume
+	if (class(tmpdf) == "try-error") {next}
+	if (dim(tmpdf)[1] < 200) {next}
+	tmpdf$date2 <- as.integer(gsub("-", "", tmpdf$date))
+	turnover <- tmpdf[tmpdf$date2>=20180621 & tmpdf$date2<=20180821,]$volume
+	#lastWeek <- tmpdf[tmpdf$date2>20180809 & tmpdf$date2<20180821,]$volume
+	#lastMonthAve <- mean(lastMonth)
+	filterCode[i,]$turnover <- round(sum(turnover/10^5)/filterCode[i,]$totals,digits = 1)
+}
+
+library(reshape)
+meanMoney <- data.frame()
+tmpdf <- melt(filterCode[,c("industry","money")], id.vars = "industry")
+for (i in names(sort(table(tmpdf$industry), decreasing = T))) {
+	tmpmeanMoney <- mean(tmpdf[tmpdf$industry == i,]$value)
+	meanMoney <- rbind(meanMoney, data.frame(industry=i,meanMoney=tmpmeanMoney,count=table(tmpdf$industry)[i]))
+}
+
 save(filterCode, file="filterCode.Rdata")
 
 filterCode <- filterCode[filterCode$tmpclose != -1 & filterCode$max2year != -1 & filterCode$max1year != -1 & filterCode$max6month != -1 & filterCode$min2year != -1 &filterCode$min1year != -1 &filterCode$min6month != -1,]
@@ -67,7 +92,7 @@ save(filterCode, file="filterCode.Rdata")
 STstock <- filterCode[grep("ST", filterCode$name),]
 filterCode <- filterCode[!filterCode$code %in% STstock$code,]
 # filter total less than 100
-filterCode <- filterCode[filterCode$subvalue>=100,]
+filterCode <- filterCode[filterCode$subvalue>=50,]
 
 # add stock ZY
 ZY <- read.csv("gpzyhgmx_20180812_20180818.txt", header = T, colClasses = "character", sep="\t")
@@ -100,13 +125,33 @@ filterCode3$npr <- round(as.numeric(filterCode3$npr),digits = 1)
 filterCode3$gpr <- round(as.numeric(filterCode3$gpr),digits = 1)
 
 save(filterCode3, file="filterCode3.Rdata")
+# train the strategy on filterCode3
 
+# add volumn
+filterCode3$volumnRatio <- NA
+for (i in filterCode3$code) {
+	print(i)
+	#tmpdf <- read.csv(paste("price/",i,".csv",sep=""))
+	tmpdf <- try(read.csv(paste("price/",i,".csv",sep="")), silent=TRUE)
+	if (class(tmpdf) == "try-error") {next}
+	if (dim(tmpdf)[1] < 200) {next}
+	tmpdf$date2 <- as.integer(gsub("-", "", tmpdf$date))
+	lastMonth <- tmpdf[tmpdf$date2>=20180621 & tmpdf$date2<=20180809,]$volume
+	lastWeek <- tmpdf[tmpdf$date2>20180809 & tmpdf$date2<20180821,]$volume
+	lastMonthAve <- mean(lastMonth)
+	lastWeekAve <- mean(sort(lastWeek, decreasing = T)[1:3])
+	filterCode3[i,]$volumnRatio <- round(lastWeekAve/lastMonthAve,digits = 1)
+}
+
+## select stocks
 # filter ZYratio > 30
 filterCode4 <- filterCode3[filterCode3$ZYratio < 30,]
-# filter pos < 0.5, de > 0.4
-filterCode4 <- filterCode4[filterCode4$de1year>0.4 & filterCode4$pos1year<0.5,]
 # filter profit < 0
 filterCode4 <- filterCode4[filterCode4$profit>0,]
+# filter pos < 0.5, de > 0.4
+filterCode5 <- filterCode4[filterCode4$de1year>0.4 & filterCode4$pos1year<0.4 & filterCode4$pos6month<0.2,]
+# check
+t(filterCode5["002400",])
 
 save(filterCode4, file="filterCode4.Rdata")
 
