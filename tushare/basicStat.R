@@ -153,6 +153,18 @@ filterCode5 <- filterCode4[filterCode4$de1year>0.4 & filterCode4$pos1year<0.4 & 
 # check
 t(filterCode5["002400",])
 
+## get basic finacial report
+## ROE/PE
+tmpCode <- "000008"
+years <- 2015：2018
+seasons <- 1:4
+for (i in years):
+	for (j in seasons):
+		if (i==2018 and j>2):
+			next
+		print(i,j)
+		# read
+
 save(filterCode4, file="filterCode4.Rdata")
 
 ################################################################################
