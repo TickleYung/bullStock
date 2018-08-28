@@ -1,6 +1,7 @@
 setwd("/Users/surgery/Project/HOME/github/bullStock/tushare")
-setwd("D:\\2.Code\\github\\bullStock\\tushare")
+# setwd("D:\\2.Code\\github\\bullStock\\tushare")
 options(stringsAsFactors = F)
+
 all_basics <- read.csv("stock_basics.csv", header = T, colClasses = "character")
 rownames(all_basics) <- all_basics$code
 
@@ -166,6 +167,9 @@ for (i in years):
 		# read
 
 save(filterCode4, file="filterCode4.Rdata")
+
+save.image("basicStat.Rdata")
+load("basicStat.Rdata")
 
 ################################################################################
 filterCode <- read.csv("filterCode.csv", header = T, colClasses = "character")
