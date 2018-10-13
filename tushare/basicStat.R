@@ -17,7 +17,7 @@ issueYear <- as.integer(all_basics[,"timeToMarket"]/10000)
 barplot(table(issueYear)[names(table(issueYear))!=0])
 # filter out company less than two years
 
-filterCode <- all_basics[all_basics[,"timeToMarket"] > 0 & all_basics[,"timeToMarket"] < 20160820,]
+filterCode <- all_basics[all_basics[,"timeToMarket"] > 0 & all_basics[,"timeToMarket"] < 20160901,]
 write.csv(filterCode, file="filterCode.csv")
 
 filterCode$tmpclose <- -1
@@ -45,31 +45,31 @@ for (i in filterCode$code) {
 }
 
 # add volumn
-filterCode$turnover <- NA
-for (i in filterCode$code) {
-	print(i)
-	#tmpdf <- read.csv(paste("price/",i,".csv",sep=""))
-	tmpdf <- try(read.csv(paste("price/",i,".csv",sep="")), silent=TRUE)
-	# tmpdf$money <- tmpdf$close * tmpdf$volume
-	# tmpdf$money <- tmpdf$volume
-	if (class(tmpdf) == "try-error") {next}
-	if (dim(tmpdf)[1] < 200) {next}
-	tmpdf$date2 <- as.integer(gsub("-", "", tmpdf$date))
-	turnover <- tmpdf[tmpdf$date2>=20180621 & tmpdf$date2<=20180821,]$volume
-	#lastWeek <- tmpdf[tmpdf$date2>20180809 & tmpdf$date2<20180821,]$volume
-	#lastMonthAve <- mean(lastMonth)
-	filterCode[i,]$turnover <- round(sum(turnover/10^5)/filterCode[i,]$totals,digits = 1)
-}
+# filterCode$turnover <- NA
+# for (i in filterCode$code) {
+# 	print(i)
+# 	#tmpdf <- read.csv(paste("price/",i,".csv",sep=""))
+# 	tmpdf <- try(read.csv(paste("price/",i,".csv",sep="")), silent=TRUE)
+# 	# tmpdf$money <- tmpdf$close * tmpdf$volume
+# 	# tmpdf$money <- tmpdf$volume
+# 	if (class(tmpdf) == "try-error") {next}
+# 	if (dim(tmpdf)[1] < 200) {next}
+# 	tmpdf$date2 <- as.integer(gsub("-", "", tmpdf$date))
+# 	turnover <- tmpdf[tmpdf$date2>=20180621 & tmpdf$date2<=20180821,]$volume
+# 	#lastWeek <- tmpdf[tmpdf$date2>20180809 & tmpdf$date2<20180821,]$volume
+# 	#lastMonthAve <- mean(lastMonth)
+# 	filterCode[i,]$turnover <- round(sum(turnover/10^5)/filterCode[i,]$totals,digits = 1)
+# }
 
-library(reshape)
-meanMoney <- data.frame()
-tmpdf <- melt(filterCode[,c("industry","money")], id.vars = "industry")
-for (i in names(sort(table(tmpdf$industry), decreasing = T))) {
-	tmpmeanMoney <- mean(tmpdf[tmpdf$industry == i,]$value)
-	meanMoney <- rbind(meanMoney, data.frame(industry=i,meanMoney=tmpmeanMoney,count=table(tmpdf$industry)[i]))
-}
+# library(reshape)
+# meanMoney <- data.frame()
+# tmpdf <- melt(filterCode[,c("industry","money")], id.vars = "industry")
+# for (i in names(sort(table(tmpdf$industry), decreasing = T))) {
+# 	tmpmeanMoney <- mean(tmpdf[tmpdf$industry == i,]$value)
+# 	meanMoney <- rbind(meanMoney, data.frame(industry=i,meanMoney=tmpmeanMoney,count=table(tmpdf$industry)[i]))
+# }
 
-save(filterCode, file="filterCode.Rdata")
+# save(filterCode, file="filterCode.Rdata")
 
 filterCode <- filterCode[filterCode$tmpclose != -1 & filterCode$max2year != -1 & filterCode$max1year != -1 & filterCode$max6month != -1 & filterCode$min2year != -1 &filterCode$min1year != -1 &filterCode$min6month != -1,]
 
@@ -86,14 +86,11 @@ filterCode$outstanding <- as.numeric(filterCode$outstanding)
 filterCode$totalvalue <- filterCode$totals * filterCode$tmpclose
 filterCode$subvalue <- filterCode$outstanding * filterCode$tmpclose
 
-write.csv(filterCode, file="filterCode.csv")
-save(filterCode, file="filterCode.Rdata")
-
 # filter ST stock
 STstock <- filterCode[grep("ST", filterCode$name),]
 filterCode <- filterCode[!filterCode$code %in% STstock$code,]
 # filter total less than 100
-filterCode <- filterCode[filterCode$subvalue>=50,]
+# filterCode <- filterCode[filterCode$subvalue>=50,]
 
 # add stock ZY
 ZY <- read.csv("gpzyhgmx_20180812_20180818.txt", header = T, colClasses = "character", sep="\t")
@@ -102,7 +99,10 @@ filterCode$ZYratio <- 0
 common <- filterCode$code[filterCode$code %in% ZY$code]
 filterCode[common,]$ZYratio <- ZY[common,]$Zyratio
 #
-save(filterCode, file="filterCode2.Rdata")
+
+write.csv(filterCode, file="filterCode.csv")
+save(filterCode, file="filterCode.Rdata")
+saveRDS(filterCode, file = "filterCode.rds")
 
 filterCode3 <- filterCode[,c(1,2,3,4,5,13:16,20:22,24,31:39)]
 # sort column
@@ -125,8 +125,14 @@ filterCode3$pb <- round(as.numeric(filterCode3$pb),digits = 1)
 filterCode3$npr <- round(as.numeric(filterCode3$npr),digits = 1)
 filterCode3$gpr <- round(as.numeric(filterCode3$gpr),digits = 1)
 
-save(filterCode3, file="filterCode3.Rdata")
+saveRDS(filterCode3, file = "filterCode3.rds")
+# save(filterCode3, file="filterCode3.Rdata")
 # train the strategy on filterCode3
+
+# R shiny
+setwd("/Users/surgery/Project/HOME/github/bullStock/shiny")
+library(shiny)
+runApp("test")
 
 # add volumn
 filterCode3$volumnRatio <- NA
