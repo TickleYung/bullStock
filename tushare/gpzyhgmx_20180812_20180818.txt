@@ -1,4 +1,4 @@
-date	code	name	count	unlimit	limit	totalA	Zyratio
+date	code	name	count	unlimit	limit	totalA	zyRatio
 2018-08-17	000001	____	821	1152.97	0.00	1717041.14	0.07
 2018-08-17	000002	___	107	92853.66	0.00	972419.65	9.55
 2018-08-17	000004	____	1	839.76	0.00	8397.67	10.00
